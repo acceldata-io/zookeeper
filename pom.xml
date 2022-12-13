@@ -91,15 +91,18 @@
     <module>zookeeper-docs</module>
     <module>zookeeper-jute</module>
     <module>zookeeper-server</module>
+    <module>zookeeper-metrics-providers</module>
     <module>zookeeper-client</module>
     <module>zookeeper-recipes</module>
     <module>zookeeper-assembly</module>
+    <module>zookeeper-compatibility-tests</module>
   </modules>
 
   <scm>
     <connection>scm:git:https://gitbox.apache.org/repos/asf/zookeeper.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/zookeeper.git</developerConnection>
     <url>https://gitbox.apache.org/repos/asf/zookeeper.git</url>
+    <tag>HEAD</tag>
   </scm>
   <issueManagement>
     <system>JIRA</system>
@@ -330,7 +333,7 @@
     <hamcrest.version>1.3</hamcrest.version>
     <commons-cli.version>1.2</commons-cli.version>
     <netty.version>4.1.94.Final</netty.version>
-    <jetty.version>9.4.43.v20210629</jetty.version>
+    <jetty.version>9.4.49.v20220914</jetty.version>
     <jackson.version>2.12.7.1</jackson.version>
     <json.version>1.1.1</json.version>
     <jline.version>2.14.6</jline.version>
