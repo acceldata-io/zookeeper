@@ -26,7 +26,7 @@ xmlns:cs="antlib:com.puppycrawl.tools.checkstyle.ant">
     <!-- ====================================================== -->
     <!-- Dependency versions                                    -->
     <!-- ====================================================== -->
-    <property name="slf4j.version" value="1.7.36"/>
+    <property name="slf4j.version" value="1.7.25"/>
     <property name="commons-cli.version" value="1.2"/>
     <property name="spotbugsannotations.version" value="3.1.9"/>
 
