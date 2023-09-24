@@ -314,4 +314,52 @@ public class QuorumKerberosHostBasedAuthTest extends KerberosSecurityTestcase {
         }
     }
 
+    /**
+     * Test to verify that the bad server connection to the quorum should be rejected.
+     */
+    @Test
+    @Timeout(value = 120)
+    public void testConnectHostlessPrincipalBadServer() throws Exception {
+        String serverPrincipal = hostServerPrincipal.substring(0, hostServerPrincipal.lastIndexOf("@"));
+        Map<String, String> authConfigs = new HashMap<>();
+        authConfigs.put(QuorumAuth.QUORUM_SASL_AUTH_ENABLED, "true");
+        authConfigs.put(QuorumAuth.QUORUM_SERVER_SASL_AUTH_REQUIRED, "true");
+        authConfigs.put(QuorumAuth.QUORUM_LEARNER_SASL_AUTH_REQUIRED, "true");
+        authConfigs.put(QuorumAuth.QUORUM_KERBEROS_SERVICE_PRINCIPAL, serverPrincipal);
+        String connectStr = startQuorum(3, authConfigs, 3);
+        CountdownWatcher watcher = new CountdownWatcher();
+        ZooKeeper zk = new ZooKeeper(connectStr, ClientBase.CONNECTION_TIMEOUT, watcher);
+        watcher.waitForConnected(ClientBase.CONNECTION_TIMEOUT);
+        for (int i = 0; i < 10; i++) {
+            zk.create("/" + i, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        }
+        zk.close();
+
+        String quorumCfgSection = mt.get(0).getQuorumCfgSection();
+        StringBuilder sb = new StringBuilder();
+        sb.append(quorumCfgSection);
+
+        int myid = mt.size() + 1;
+        final int clientPort = PortAssignment.unique();
+        String server = String.format("server.%d=localhost:%d:%d:participant", myid, PortAssignment.unique(), PortAssignment.unique());
+        sb.append(server + "\n");
+        quorumCfgSection = sb.toString();
+        authConfigs.put(QuorumAuth.QUORUM_LEARNER_SASL_LOGIN_CONTEXT, "QuorumLearnerMissingHost");
+        MainThread badServer = new MainThread(myid, clientPort, quorumCfgSection, authConfigs);
+        badServer.start();
+        watcher = new CountdownWatcher();
+        connectStr = "127.0.0.1:" + clientPort;
+        zk = new ZooKeeper(connectStr, ClientBase.CONNECTION_TIMEOUT, watcher);
+        try {
+            watcher.waitForConnected(ClientBase.CONNECTION_TIMEOUT / 3);
+            fail("Must throw exception as the principal does not include an authorized host!");
+        } catch (TimeoutException e) {
+            // expected
+        } finally {
+            zk.close();
+            badServer.shutdown();
+            badServer.deleteBaseDir();
+        }
+    }
+
 }
