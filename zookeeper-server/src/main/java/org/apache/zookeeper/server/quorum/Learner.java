@@ -750,7 +750,7 @@ public class Learner {
                         zk.takeSnapshot(syncSnapshot);
                     }
 
-                    self.setCurrentEpoch(newEpoch);
+
                     writeToTxnLog = true;
                     //Anything after this needs to go to the transaction log, not applied directly in memory
                     isPreZAB1_0 = false;
@@ -806,6 +806,7 @@ public class Learner {
 
                     // send NEWLEADER ack after the committed txns are persisted
                     writePacket(new QuorumPacket(Leader.ACK, newLeaderZxid, null, null), true);
+                    LOG.info("Sent NEWLEADER ack to leader with zxid {}", Long.toHexString(newLeaderZxid));
                     break;
                 }
             }
@@ -833,6 +834,7 @@ public class Learner {
             for (Long zxid : packetsCommitted) {
                 fzk.commit(zxid);
             }
+            LOG.info("{} txns have been committed", packetsCommitted.size());
         } else if (zk instanceof ObserverZooKeeperServer) {
             // Similar to follower, we need to log requests between the snapshot
             // and UPTODATE
