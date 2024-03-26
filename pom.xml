@@ -55,6 +55,19 @@
     </license>
   </licenses>
 
+<distributionManagement>
+    <repository>
+      <id>nexus-releases</id>
+      <name>Releases</name>
+     <url>https://repo1.acceldata.dev/repository/odp-release/</url>
+   </repository>
+   <snapshotRepository>
+     <id>nexus-snapshots</id>
+     <name>Snapshot</name>
+     <url>https://repo1.acceldata.dev/repository/odp-snapshot/</url>
+   </snapshotRepository>
+ </distributionManagement>
+
   <modules>
     <module>zookeeper-docs</module>
     <module>zookeeper-jute</module>
@@ -302,7 +315,7 @@
     <jackson.version>2.13.3</jackson.version>
     <json.version>1.1.1</json.version>
     <jline.version>2.14.6</jline.version>
-    <snappy.version>1.1.7</snappy.version>
+    <snappy.version>1.1.10.4</snappy.version>
     <kerby.version>2.0.0</kerby.version>
     <bouncycastle.version>1.60</bouncycastle.version>
     <commons-collections.version>3.2.2</commons-collections.version>
