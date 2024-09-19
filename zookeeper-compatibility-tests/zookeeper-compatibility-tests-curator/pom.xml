@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>zookeeper-compatibility-tests-curator</artifactId>
+    <packaging>pom</packaging>
 
     <name>Apache ZooKeeper - Compatibility Tests - Curator</name>
     <description>Module for Apache Curator compatibility tests</description>
