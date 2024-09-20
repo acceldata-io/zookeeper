@@ -89,6 +89,18 @@ public class FollowerZooKeeperServer extends LearnerZooKeeperServer {
     }
 
     /**
+     * Build a request for the txn and append it to the transaction log
+     * @param hdr the txn header
+     * @param txn the txn
+     * @param digest the digest of txn
+     */
+    public void appendRequest(final TxnHeader hdr, final Record txn, final TxnDigest digest) throws IOException {
+        final Request request = new Request(hdr.getClientId(), hdr.getCxid(), hdr.getType(), hdr, txn, hdr.getZxid());
+        request.setTxnDigest(digest);
+        getZKDatabase().append(request);
+    }
+
+    /**
      * When a COMMIT message is received, eventually this method is called,
      * which matches up the zxid from the COMMIT with (hopefully) the head of
      * the pendingTxns queue and hands it to the commitProcessor to commit.
