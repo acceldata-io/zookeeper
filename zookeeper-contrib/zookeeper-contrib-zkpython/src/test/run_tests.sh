@@ -36,5 +36,5 @@ LIB_PATH=../../build/c/.libs/:../../build/test/test-cppunit/.libs
 for test in `ls $1/*_test.py`; 
 do
     echo "Running $test"
-    LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH DYLD_LIBRARY_PATH=$LIB_PATH:$DYLD_LIBRARY_PATH PYTHONPATH=$PYTHONPATH python $test
+    LD_LIBRARY_PATH=$LIB_PATH:$LD_LIBRARY_PATH DYLD_LIBRARY_PATH=$LIB_PATH:$DYLD_LIBRARY_PATH PYTHONPATH=$PYTHONPATH ambari-python-wrap $test
 done
