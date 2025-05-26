@@ -18,7 +18,9 @@
 
 package org.apache.zookeeper.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import javax.security.auth.login.Configuration;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.Ids;
@@ -27,7 +29,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class SaslAuthRequiredTest extends SaslAuthDigestTestBase {
+public class SaslAuthRequiredMultiClientTest extends ClientBase {
 
     @BeforeAll
     public static void setUpBeforeClass() {
@@ -44,19 +46,43 @@ public class SaslAuthRequiredTest extends SaslAuthDigestTestBase {
     }
 
     @Test
-    public void testClientOpWithValidSASLAuth() throws Exception {
-        ZooKeeper zk = null;
-        CountdownWatcher watcher = new CountdownWatcher();
-        try {
-            zk = createClient(watcher);
+    public void testClientOpWithInvalidSASLUserAuthAfterSuccessLogin() throws Exception {
+        resetJaasConfiguration("jaas.conf", "super", "test");
+        try  (ZooKeeper zk = createClient()) {
             zk.create("/foobar", null, Ids.CREATOR_ALL_ACL, CreateMode.PERSISTENT);
         } catch (KeeperException e) {
             fail("Client operation should succeed with valid SASL configuration.");
-        } finally {
-            if (zk != null) {
-                zk.close();
-            }
+        }
+
+        resetJaasConfiguration("jaas.conf", "super_wrong", "test");
+        try  (ZooKeeper wrongUserZk = createClient()) {
+            wrongUserZk.create("/bar", null, Ids.CREATOR_ALL_ACL, CreateMode.PERSISTENT);
+            fail("Client with wrong SASL config should not pass SASL authentication.");
+        } catch (KeeperException e) {
+            assertEquals(KeeperException.Code.AUTHFAILED, e.code());
         }
     }
 
+    @Test
+    public void testClientOpWithInvalidSASLPasswordAuthAfterSuccessLogin() throws Exception {
+        resetJaasConfiguration("jaas.conf", "super", "test");
+        try (ZooKeeper zk = createClient()) {
+            zk.create("/foobar", null, Ids.CREATOR_ALL_ACL, CreateMode.PERSISTENT);
+        } catch (KeeperException e) {
+            fail("Client operation should succeed with valid SASL configuration.");
+        }
+
+        resetJaasConfiguration("jaas.conf", "super", "test_wrongong");
+        try (ZooKeeper wrongPasswordZk = createClient()) {
+            wrongPasswordZk.create("/bar", null, Ids.CREATOR_ALL_ACL, CreateMode.PERSISTENT);
+            fail("Client with wrong SASL config should not pass SASL authentication.");
+        } catch (KeeperException e) {
+            assertEquals(KeeperException.Code.AUTHFAILED, e.code());
+        }
+    }
+
+    protected static void resetJaasConfiguration(String fileName, String userName, String password) {
+        Configuration.setConfiguration(null);
+        System.setProperty(SaslTestUtil.jaasConfig, SaslTestUtil.createJAASConfigFile(fileName, userName, password));
+    }
 }

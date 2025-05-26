@@ -313,7 +313,7 @@ public class FileTxnSnapLog {
     }
 
     /**
-     * This function will fast forward the server database to have the latest
+     * This function will fast-forward the server database to have the latest
      * transactions in it.  This is the same as restore, but only reads from
      * the transaction logs and not restores from a snapshot.
      * @param dt the datatree to write transactions to.
@@ -587,7 +587,7 @@ public class FileTxnSnapLog {
      * @throws IOException
      */
     public boolean append(Request si) throws IOException {
-        return txnLog.append(si.getHdr(), si.getTxn(), si.getTxnDigest());
+        return txnLog.append(si);
     }
 
     /**

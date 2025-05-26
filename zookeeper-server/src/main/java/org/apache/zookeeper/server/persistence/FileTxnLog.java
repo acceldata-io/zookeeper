@@ -222,6 +222,13 @@ public class FileTxnLog implements TxnLog, Closeable {
     }
 
     /**
+     * Get log size limit
+     */
+    public static long getTxnLogSizeLimit() {
+        return txnLogSizeLimit;
+    }
+
+    /**
      * creates a checksum algorithm to be used
      * @return the checksum used for this txnlog
      */
@@ -257,18 +264,9 @@ public class FileTxnLog implements TxnLog, Closeable {
         }
     }
 
-    /**
-     * append an entry to the transaction log
-     * @param hdr the header of the transaction
-     * @param txn the transaction part of the entry
-     * returns true iff something appended, otw false
-     */
-    public synchronized boolean append(TxnHeader hdr, Record txn) throws IOException {
-              return append(hdr, txn, null);
-    }
-
     @Override
-    public synchronized boolean append(TxnHeader hdr, Record txn, TxnDigest digest) throws IOException {
+    public synchronized boolean append(Request request) throws IOException {
+        TxnHeader hdr = request.getHdr();
         if (hdr == null) {
             return false;
         }
@@ -296,7 +294,7 @@ public class FileTxnLog implements TxnLog, Closeable {
             streamsToFlush.add(fos);
         }
         filePadding.padFile(fos.getChannel());
-        byte[] buf = Util.marshallTxnEntry(hdr, txn, digest);
+        byte[] buf = request.getSerializeData();
         if (buf == null || buf.length == 0) {
             throw new IOException("Faulty serialization for header " + "and txn");
         }
@@ -683,14 +681,29 @@ public class FileTxnLog implements TxnLog, Closeable {
 
         /**
          * go to the next logfile
+         *
          * @return true if there is one and false if there is no
          * new file to be read
-         * @throws IOException
          */
         private boolean goToNextLog() throws IOException {
-            if (storedFiles.size() > 0) {
+            if (!storedFiles.isEmpty()) {
                 this.logFile = storedFiles.remove(storedFiles.size() - 1);
-                ia = createInputArchive(this.logFile);
+                try {
+                    ia = createInputArchive(this.logFile);
+                } catch (EOFException ex) {
+                    // If this file is the last log file in the database and is empty,
+                    // it means that the last time the file was created
+                    // before the header was written.
+                    if (storedFiles.isEmpty() && this.logFile.length() == 0) {
+                        boolean deleted = this.logFile.delete();
+                        if (!deleted) {
+                            throw new IOException("Failed to delete empty tail log file: " + this.logFile.getName());
+                        }
+                        LOG.warn("Delete empty tail log file to recover from corruption file: {}", this.logFile.getName());
+                        return false;
+                    }
+                    throw ex;
+                }
                 return true;
             }
             return false;
