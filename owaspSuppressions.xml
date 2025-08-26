@@ -72,5 +72,4 @@
            in json-java which we don't use in ZooKeeper -->
       <cve>CVE-2022-45688</cve>
    </suppress>
-
 </suppressions>

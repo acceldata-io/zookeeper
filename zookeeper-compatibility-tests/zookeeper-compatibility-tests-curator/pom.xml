@@ -22,11 +22,12 @@
     <parent>
         <groupId>org.apache.zookeeper</groupId>
         <artifactId>zookeeper-compatibility-tests</artifactId>
-        <version>3.8.4.3.3.6.1-SNAPSHOT</version>
+        <version>3.8.4.3.3.6.2-1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>zookeeper-compatibility-tests-curator</artifactId>
+    <packaging>pom</packaging>
 
     <name>Apache ZooKeeper - Compatibility Tests - Curator</name>
     <description>Module for Apache Curator compatibility tests</description>
