@@ -147,10 +147,12 @@ public class X509AuthTest extends ZKTestCase {
             return null;
         }
         @Override
+        @Deprecated
         public Principal getIssuerDN() {
             return null;
         }
         @Override
+        @Deprecated
         public Principal getSubjectDN() {
             return null;
         }
