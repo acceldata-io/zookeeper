@@ -91,11 +91,9 @@
     <module>zookeeper-docs</module>
     <module>zookeeper-jute</module>
     <module>zookeeper-server</module>
-    <module>zookeeper-metrics-providers</module>
     <module>zookeeper-client</module>
     <module>zookeeper-recipes</module>
     <module>zookeeper-assembly</module>
-    <module>zookeeper-compatibility-tests</module>
   </modules>
 
   <scm>
