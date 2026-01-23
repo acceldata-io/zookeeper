@@ -195,6 +195,7 @@ public abstract class X509Util implements Closeable, AutoCloseable {
     private final String sslTruststoreTypeProperty = getConfigPrefix() + "trustStore.type";
     private final String sslContextSupplierClassProperty = getConfigPrefix() + "context.supplier.class";
     private final String sslHostnameVerificationEnabledProperty = getConfigPrefix() + "hostnameVerification";
+    private final String sslAllowReverseDnsLookupProperty = getConfigPrefix() + "allowReverseDnsLookup";
     private final String sslCrlEnabledProperty = getConfigPrefix() + "crl";
     private final String sslOcspEnabledProperty = getConfigPrefix() + "ocsp";
     private final String sslClientAuthProperty = getConfigPrefix() + "clientAuth";
@@ -212,6 +213,8 @@ public abstract class X509Util implements Closeable, AutoCloseable {
     protected abstract String getConfigPrefix();
 
     protected abstract boolean shouldVerifyClientHostname();
+
+    protected abstract boolean shouldAllowReverseDnsLookup();
 
     public String getSslProtocolProperty() {
         return sslProtocolProperty;
@@ -269,6 +272,10 @@ public abstract class X509Util implements Closeable, AutoCloseable {
         return sslHostnameVerificationEnabledProperty;
     }
 
+    public String getSslAllowReverseDnsLookupProperty() {
+        return sslAllowReverseDnsLookupProperty;
+    }
+
     public String getSslCrlEnabledProperty() {
         return sslCrlEnabledProperty;
     }
@@ -305,6 +312,10 @@ public abstract class X509Util implements Closeable, AutoCloseable {
 
     public boolean isClientHostnameVerificationEnabled(ZKConfig config) {
         return isServerHostnameVerificationEnabled(config) && shouldVerifyClientHostname();
+    }
+
+    public boolean allowReverseDnsLookup(ZKConfig config) {
+        return config.getBoolean(this.getSslAllowReverseDnsLookupProperty(), shouldAllowReverseDnsLookup());
     }
 
     public SSLContext getDefaultSSLContext() throws X509Exception.SSLContextException {
@@ -420,6 +431,7 @@ public abstract class X509Util implements Closeable, AutoCloseable {
         boolean sslOcspEnabled = config.getBoolean(this.sslOcspEnabledProperty);
         boolean sslServerHostnameVerificationEnabled = isServerHostnameVerificationEnabled(config);
         boolean sslClientHostnameVerificationEnabled = isClientHostnameVerificationEnabled(config);
+        boolean allowReverseDnsLookup = allowReverseDnsLookup(config);
         boolean fipsMode = getFipsMode(config);
 
         if (trustStoreLocationProp.isEmpty()) {
@@ -429,7 +441,7 @@ public abstract class X509Util implements Closeable, AutoCloseable {
                 trustManagers = new TrustManager[]{
                     createTrustManager(trustStoreLocationProp, trustStorePasswordProp, trustStoreTypeProp, sslCrlEnabled,
                         sslOcspEnabled, sslServerHostnameVerificationEnabled, sslClientHostnameVerificationEnabled,
-                        fipsMode)};
+                        allowReverseDnsLookup, fipsMode)};
             } catch (TrustManagerException trustManagerException) {
                 throw new SSLContextException("Failed to create TrustManager", trustManagerException);
             } catch (IllegalArgumentException e) {
@@ -565,6 +577,7 @@ public abstract class X509Util implements Closeable, AutoCloseable {
         boolean ocspEnabled,
         final boolean serverHostnameVerificationEnabled,
         final boolean clientHostnameVerificationEnabled,
+        final boolean allowReverseDnsLookup,
         final boolean fipsMode) throws TrustManagerException {
         if (trustStorePassword == null) {
             trustStorePassword = "";
@@ -599,7 +612,7 @@ public abstract class X509Util implements Closeable, AutoCloseable {
                         LOG.debug("FIPS mode is OFF: creating ZKTrustManager");
                     }
                     return new ZKTrustManager((X509ExtendedTrustManager) tm, serverHostnameVerificationEnabled,
-                        clientHostnameVerificationEnabled);
+                        clientHostnameVerificationEnabled, allowReverseDnsLookup);
                 }
             }
             throw new TrustManagerException("Couldn't find X509TrustManager");
