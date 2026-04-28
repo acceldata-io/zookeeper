@@ -56,6 +56,14 @@ public class SaslServerPrincipal {
         String principalUserName = clientConfig.getProperty(
             ZKClientConfig.ZK_SASL_CLIENT_USERNAME,
             ZKClientConfig.ZK_SASL_CLIENT_USERNAME_DEFAULT);
+
+        // If principalUserName already contains '@' it is a fully-qualified headless principal
+        // (e.g. "zookeeper@REALM") — return it directly without appending a hostname component.
+        if (principalUserName.contains("@")) {
+            LOG.debug("Using headless server principal: {}", principalUserName);
+            return principalUserName;
+        }
+
         String hostName = addr.getHostName();
 
         boolean canonicalize = true;
