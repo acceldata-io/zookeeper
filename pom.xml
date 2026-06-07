@@ -341,6 +341,7 @@
     <commons-collections.version>3.2.2</commons-collections.version>
     <spotbugsannotations.version>3.1.9</spotbugsannotations.version>
     <checkstyle.version>8.17</checkstyle.version>
+    <commons-io.version>2.14.0</commons-io.version>
   </properties>
 
   <dependencyManagement>
@@ -495,6 +496,11 @@
         <groupId>org.xerial.snappy</groupId>
         <artifactId>snappy-java</artifactId>
         <version>${snappy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
