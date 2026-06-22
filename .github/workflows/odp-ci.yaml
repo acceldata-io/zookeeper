@@ -1,0 +1,93 @@
+#
+# ODP Pre-commit CI — GitHub Actions equivalent of the Argo CI WorkflowTemplate.
+#
+# Runs accelbuild build --profile ci for every zookeeper PR.
+# Posts a GitHub commit status check (accelbuild/CI) via --notify.
+#
+# Secrets required in this repo (Settings → Secrets and variables → Actions):
+#   ODP_OPS_SSH_PRIVATE_KEY   — SSH private key (paste raw file content with real newlines)
+#   ODP_GRADLE_PROPERTIES — gradle.properties content (Gradle proxy URL, credentials)
+#   ODP_MAVEN_SETTINGS    — Maven settings.xml content (Nexus credentials)
+#
+# GITHUB_TOKEN is provided automatically by GitHub Actions — no secret needed.
+#
+# Runs on GitHub-hosted runners (ubuntu-latest).
+# Container image is publicly accessible — no registry credentials needed.
+
+name: ODP Pre-commit CI
+
+on:
+  pull_request:
+    branches: ['ODP-main', "nightly/ODP-3.3.6.5"]
+
+permissions:
+  statuses: write   # required for --notify to post commit status checks
+
+jobs:
+  odp-ci:
+    name: ODP CI — zookeeper PR #${{ github.event.pull_request.number }}
+    runs-on: ubuntu-latest
+    container:
+      image: repo1.acceldata.dev:8086/odp-images/build-env/rockylinux8.8-jdk11-py3:1
+      options: --user root
+    timeout-minutes: 360
+
+    steps:
+      - name: Set up SSH keys
+        run: |
+          mkdir -p /root/.ssh && chmod 700 /root/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > /root/.ssh/id_ed25519
+          chmod 600 /root/.ssh/id_ed25519
+          ssh-keyscan github.com >> /root/.ssh/known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ODP_OPS_SSH_PRIVATE_KEY }}
+
+      - name: Set up Gradle properties
+        run: |
+          mkdir -p /root/.gradle
+          printf '%s' "$GRADLE_PROPERTIES" > /root/.gradle/gradle.properties
+        env:
+          GRADLE_PROPERTIES: ${{ secrets.ODP_GRADLE_PROPERTIES }}
+
+      - name: Set up Maven settings
+        run: |
+          mkdir -p /root/.m2
+          echo "$MAVEN_SETTINGS" > /root/.m2/settings.xml
+        env:
+          MAVEN_SETTINGS: ${{ secrets.ODP_MAVEN_SETTINGS }}
+
+      - name: Clone accelbuild
+        run: |
+          echo ">>> Cloning accelbuild @ main ..."
+          git clone --depth 1 -b main git@github.com:acceldata-io/accelbuild.git /tmp/_ab_src
+          echo ">>> accelbuild: $(git -C /tmp/_ab_src log -1 --format='%h  %s')"
+
+      - name: Install accelbuild
+        run: |
+          echo ">>> Installing accelbuild ..."
+          python3.11 -m venv /tmp/_ab_venv
+          /tmp/_ab_venv/bin/pip install -q --no-cache-dir /tmp/_ab_src
+
+      - name: Resolve SHAs
+        run: |
+          echo ">>> Resolving SHAs for zookeeper PR #${{ github.event.pull_request.number }} ..."
+          /tmp/_ab_venv/bin/accelbuild resolve \
+            --stack odp \
+            --component-repo zookeeper:${{ github.base_ref }}:pr:${{ github.event.pull_request.number }} \
+            --component-repo odp-bigtop:branch:ODP-6776 \
+            --release-version 3.3.6.5-1001
+          # writes ./component-manifest.yaml locally — no SFTP needed
+
+      - name: CI Build
+        run: |
+          echo ">>> accelbuild build --stack odp --os rhel8 --profile ci --component zookeeper --release-version 3.3.6.5-1001 --notify"
+          /tmp/_ab_venv/bin/accelbuild build \
+            --stack odp \
+            --os rhel8 \
+            --profile ci \
+            --component zookeeper \
+            --release-version 3.3.6.5-1001 \
+            --component-manifest-file ./component-manifest.yaml \
+            --notify
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
