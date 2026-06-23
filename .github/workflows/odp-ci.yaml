@@ -18,7 +18,7 @@ name: ODP Pre-commit CI
 
 on:
   pull_request:
-    branches: ['ODP-main', "nightly/ODP-3.3.6.5"]
+    branches: ['ODP-main', 'nightly/**']
 
 permissions:
   statuses: write   # required for --notify to post commit status checks
@@ -55,6 +55,16 @@ jobs:
           echo "$MAVEN_SETTINGS" > /root/.m2/settings.xml
         env:
           MAVEN_SETTINGS: ${{ secrets.ODP_MAVEN_SETTINGS }}
+
+      - name: Restore Maven cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /root/.m2/repository
+            !/root/.m2/repository/org/apache/zookeeper
+          key: m2-zookeeper-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            m2-zookeeper-
 
       - name: Clone accelbuild
         run: |
