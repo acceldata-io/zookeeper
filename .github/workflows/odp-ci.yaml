@@ -1,7 +1,10 @@
 #
-# ODP Pre-commit CI — GitHub Actions equivalent of the Argo CI WorkflowTemplate.
+# ODP CI — GitHub Actions equivalent of the Argo CI WorkflowTemplate.
 #
-# Runs accelbuild build --profile ci for every zookeeper PR.
+# Runs on:
+#   pull_request — pre-commit CI for every zookeeper PR
+#   push         — post-merge validation on nightly branches (also warms the Maven cache)
+#
 # Posts a GitHub commit status check (accelbuild/CI) via --notify.
 #
 # Secrets required in this repo (Settings → Secrets and variables → Actions):
@@ -10,22 +13,23 @@
 #   ODP_MAVEN_SETTINGS    — Maven settings.xml content (Nexus credentials)
 #
 # GITHUB_TOKEN is provided automatically by GitHub Actions — no secret needed.
-#
-# Runs on GitHub-hosted runners (ubuntu-latest).
-# Container image is publicly accessible — no registry credentials needed.
 
 name: ODP Pre-commit CI
 
 on:
   pull_request:
     branches: ['ODP-main', 'nightly/**']
+  push:
+    branches: ['nightly/**']
 
 permissions:
   statuses: write   # required for --notify to post commit status checks
 
 jobs:
   odp-ci:
-    name: ODP CI — zookeeper PR #${{ github.event.pull_request.number }}
+    name: >-
+      ODP CI — zookeeper
+      ${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || github.ref_name }}
     runs-on: ubuntu-latest
     container:
       image: repo1.acceldata.dev:8086/odp-images/build-env/rockylinux8.8-jdk11-py3:1
@@ -80,17 +84,21 @@ jobs:
 
       - name: Resolve SHAs
         run: |
-          echo ">>> Resolving SHAs for zookeeper PR #${{ github.event.pull_request.number }} ..."
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            REPO_ARG="zookeeper:${{ github.base_ref }}:pr:${{ github.event.pull_request.number }}"
+            echo ">>> Resolving SHAs for PR #${{ github.event.pull_request.number }} ..."
+          else
+            REPO_ARG="zookeeper:branch:${{ github.ref_name }}"
+            echo ">>> Resolving SHAs for post-merge push to ${{ github.ref_name }} ..."
+          fi
           /tmp/_ab_venv/bin/accelbuild resolve \
             --stack odp \
-            --component-repo zookeeper:${{ github.base_ref }}:pr:${{ github.event.pull_request.number }} \
-            --component-repo odp-bigtop:branch:ODP-6776 \
+            --component-repo "$REPO_ARG" \
             --release-version 3.3.6.5-1001
           # writes ./component-manifest.yaml locally — no SFTP needed
 
       - name: CI Build
         run: |
-          echo ">>> accelbuild build --stack odp --os rhel8 --profile ci --component zookeeper --release-version 3.3.6.5-1001 --notify"
           /tmp/_ab_venv/bin/accelbuild build \
             --stack odp \
             --os rhel8 \
