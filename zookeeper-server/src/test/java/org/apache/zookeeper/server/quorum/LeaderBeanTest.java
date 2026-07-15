@@ -43,7 +43,6 @@ import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeer.LearnerType;
 import org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
-import org.apache.zookeeper.server.util.SerializeUtils;
 import org.apache.zookeeper.test.ClientBase;
 import org.apache.zookeeper.txn.TxnHeader;
 import org.junit.jupiter.api.AfterEach;
@@ -136,7 +135,7 @@ public class LeaderBeanTest {
         leader.propose(req);
 
         // Assert
-        byte[] data = SerializeUtils.serializeRequest(req);
+        byte[] data = req.getSerializeData();
         assertEquals(data.length, leaderBean.getLastProposalSize());
         assertEquals(data.length, leaderBean.getMinProposalSize());
         assertEquals(data.length, leaderBean.getMaxProposalSize());
