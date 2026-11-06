@@ -77,6 +77,8 @@ public class X509AuthenticationProvider implements AuthenticationProvider {
             boolean ocspEnabled = Boolean.parseBoolean(config.getProperty(x509Util.getSslOcspEnabledProperty()));
             boolean hostnameVerificationEnabled = Boolean.parseBoolean(
                     config.getProperty(x509Util.getSslHostnameVerificationEnabledProperty()));
+            boolean allowReverseDnsLookup = Boolean.parseBoolean(
+                    config.getProperty(x509Util.getSslAllowReverseDnsLookupProperty()));
 
             X509KeyManager km = null;
             X509TrustManager tm = null;
@@ -100,7 +102,7 @@ public class X509AuthenticationProvider implements AuthenticationProvider {
                 try {
                     tm = X509Util.createTrustManager(
                             trustStoreLocation, trustStorePassword, trustStoreTypeProp, crlEnabled, ocspEnabled,
-                            hostnameVerificationEnabled, false);
+                            hostnameVerificationEnabled, false, allowReverseDnsLookup);
                 } catch (TrustManagerException e) {
                     LOG.error("Failed to create trust manager", e);
                 }

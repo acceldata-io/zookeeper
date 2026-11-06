@@ -416,6 +416,7 @@ public class QuorumSSLTest extends QuorumPeerTestBase {
         System.clearProperty(quorumX509Util.getSslTruststoreLocationProperty());
         System.clearProperty(quorumX509Util.getSslTruststorePasswdProperty());
         System.clearProperty(quorumX509Util.getSslHostnameVerificationEnabledProperty());
+        System.clearProperty(quorumX509Util.getSslAllowReverseDnsLookupProperty());
         System.clearProperty(quorumX509Util.getSslOcspEnabledProperty());
         System.clearProperty(quorumX509Util.getSslCrlEnabledProperty());
         System.clearProperty(quorumX509Util.getCipherSuitesProperty());
@@ -523,6 +524,8 @@ public class QuorumSSLTest extends QuorumPeerTestBase {
 
     @Test
     public void testHostnameVerificationWithInvalidIpAddressAndValidHostname() throws Exception {
+        // We need reverse DNS lookup to get this working, because quorum is connecting via ip addresses
+        System.setProperty(quorumX509Util.getSslAllowReverseDnsLookupProperty(), Boolean.toString(true));
         String badhostnameKeystorePath = tmpDir + "/badhost.jks";
         X509Certificate badHostCert = buildEndEntityCert(defaultKeyPair, rootCertificate, rootKeyPair.getPrivate(),
                 "localhost", "140.211.11.105", null, null);
