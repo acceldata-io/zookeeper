@@ -45,6 +45,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.Security;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,6 +53,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -144,7 +146,7 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testServerHostnameVerificationWithHostnameVerificationDisabled() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, false, false);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, false, false, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(IP_ADDRESS, HOSTNAME);
         zkTrustManager.checkServerTrusted(certificateChain, null, mockSocket);
@@ -157,7 +159,7 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testServerHostnameVerificationWithHostnameVerificationDisabledAndClientHostnameVerificationEnabled() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, false, true);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, false, true, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(IP_ADDRESS, HOSTNAME);
         zkTrustManager.checkServerTrusted(certificateChain, null, mockSocket);
@@ -170,7 +172,7 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testServerHostnameVerificationWithIPAddress() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, false);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, false, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(IP_ADDRESS, null);
         zkTrustManager.checkServerTrusted(certificateChain, null, mockSocket);
@@ -183,7 +185,7 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testServerHostnameVerificationWithHostname() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, false);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, false, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(null, HOSTNAME);
         zkTrustManager.checkServerTrusted(certificateChain, null, mockSocket);
@@ -196,7 +198,7 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testClientHostnameVerificationWithHostnameVerificationDisabled() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, false, true);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, false, true, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(null, HOSTNAME);
         zkTrustManager.checkClientTrusted(certificateChain, null, mockSocket);
@@ -209,7 +211,7 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testClientHostnameVerificationWithClientHostnameVerificationDisabled() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, false);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, false, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(null, HOSTNAME);
         zkTrustManager.checkClientTrusted(certificateChain, null, mockSocket);
@@ -222,7 +224,7 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testClientHostnameVerificationWithIPAddress() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, true);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, true, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(IP_ADDRESS, null);
         zkTrustManager.checkClientTrusted(certificateChain, null, mockSocket);
@@ -235,13 +237,61 @@ public class ZKTrustManagerTest extends ZKTestCase {
 
     @Test
     public void testClientHostnameVerificationWithHostname() throws Exception {
-        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, true);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, true, false);
 
         X509Certificate[] certificateChain = createSelfSignedCertifcateChain(null, HOSTNAME);
         zkTrustManager.checkClientTrusted(certificateChain, null, mockSocket);
 
         verify(mockInetAddress, times(1)).getHostAddress();
         verify(mockInetAddress, times(1)).getHostName();
+
+        verify(mockX509ExtendedTrustManager, times(1)).checkClientTrusted(certificateChain, null, mockSocket);
+    }
+
+    @Test
+    public void testClientHostnameVerificationWithIpAddress_CertHostnameSan_NoReverseLookup_Fail() throws Exception {
+        // InetAddress created from a literal IP has no hostname: toString() is "/<ip>"
+        when(mockInetAddress.toString()).thenReturn("/" + IP_ADDRESS);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, true, false);
+
+        X509Certificate[] certificateChain = createSelfSignedCertifcateChain(null, HOSTNAME);
+        try {
+            zkTrustManager.checkClientTrusted(certificateChain, null, mockSocket);
+            fail("Expected CertificateException when reverse DNS lookup is disabled");
+        } catch (CertificateException expected) {
+            // expected
+        }
+
+        verify(mockInetAddress, times(1)).getHostAddress();
+        verify(mockInetAddress, times(0)).getHostName();
+
+        verify(mockX509ExtendedTrustManager, times(1)).checkClientTrusted(certificateChain, null, mockSocket);
+    }
+
+    @Test
+    public void testClientHostnameVerificationWithIpAddress_CertHostnameSan_WithReverseLookup() throws Exception {
+        when(mockInetAddress.toString()).thenReturn("/" + IP_ADDRESS);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, true, true);
+
+        X509Certificate[] certificateChain = createSelfSignedCertifcateChain(null, HOSTNAME);
+        zkTrustManager.checkClientTrusted(certificateChain, null, mockSocket);
+
+        verify(mockInetAddress, times(1)).getHostAddress();
+        verify(mockInetAddress, times(1)).getHostName();
+
+        verify(mockX509ExtendedTrustManager, times(1)).checkClientTrusted(certificateChain, null, mockSocket);
+    }
+
+    @Test
+    public void testClientHostnameVerificationWithIpAddress_CertIpSan() throws Exception {
+        when(mockInetAddress.toString()).thenReturn("/" + IP_ADDRESS);
+        ZKTrustManager zkTrustManager = new ZKTrustManager(mockX509ExtendedTrustManager, true, true, false);
+
+        X509Certificate[] certificateChain = createSelfSignedCertifcateChain(IP_ADDRESS, null);
+        zkTrustManager.checkClientTrusted(certificateChain, null, mockSocket);
+
+        verify(mockInetAddress, times(1)).getHostAddress();
+        verify(mockInetAddress, times(0)).getHostName();
 
         verify(mockX509ExtendedTrustManager, times(1)).checkClientTrusted(certificateChain, null, mockSocket);
     }

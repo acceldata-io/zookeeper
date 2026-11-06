@@ -29,4 +29,9 @@ public class QuorumX509Util extends X509Util {
     protected boolean shouldVerifyClientHostname() {
         return true;
     }
+
+    @Override
+    protected boolean shouldAllowReverseDnsLookup() {
+        return true;
+    }
 }

@@ -249,7 +249,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
                 false,
                 false,
                 true,
-                true);
+                true,
+                false);
     }
 
     @Test
@@ -265,7 +266,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
                 false,
                 false,
                 true,
-                true);
+                true,
+                false);
 
     }
 
@@ -279,7 +281,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
                 false,
                 false,
                 true,
-                true);
+                true,
+                false);
     }
 
     @Test
@@ -331,7 +334,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
                 true,
                 true,
                 true,
-                true);
+                true,
+                false);
     }
 
     @Test
@@ -347,7 +351,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
                 false,
                 false,
                 true,
-                true);
+                true,
+                false);
     }
 
     @Test
@@ -360,7 +365,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
                 true,
                 true,
                 true,
-                true);
+                true,
+                false);
     }
 
     @Test(expected = X509Exception.TrustManagerException.class)
@@ -373,7 +379,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
                 true,
                 true,
                 true,
-                true);
+                true,
+                false);
     }
 
     @Test
@@ -425,7 +432,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
             true,
             true,
             true,
-            true);
+            true,
+                false);
     }
 
     @Test
@@ -441,7 +449,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
             false,
             false,
             true,
-            true);
+            true,
+                false);
     }
 
     @Test
@@ -454,7 +463,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
             true,
             true,
             true,
-            true);
+            true,
+                false);
     }
 
     @Test(expected = X509Exception.TrustManagerException.class)
@@ -467,7 +477,8 @@ public class X509UtilTest extends BaseX509ParameterizedTestCase {
             true,
             true,
             true,
-            true);
+            true,
+                false);
     }
 
     @Test

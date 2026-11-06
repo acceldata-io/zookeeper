@@ -170,6 +170,7 @@ public abstract class X509Util implements Closeable, AutoCloseable {
     private String sslTruststorePasswdProperty = getConfigPrefix() + "trustStore.password";
     private String sslTruststoreTypeProperty = getConfigPrefix() + "trustStore.type";
     private String sslHostnameVerificationEnabledProperty = getConfigPrefix() + "hostnameVerification";
+    private String sslAllowReverseDnsLookupProperty = getConfigPrefix() + "allowReverseDnsLookup";
     private String sslCrlEnabledProperty = getConfigPrefix() + "crl";
     private String sslOcspEnabledProperty = getConfigPrefix() + "ocsp";
     private String sslClientAuthProperty = getConfigPrefix() + "clientAuth";
@@ -193,6 +194,8 @@ public abstract class X509Util implements Closeable, AutoCloseable {
     protected abstract String getConfigPrefix();
 
     protected abstract boolean shouldVerifyClientHostname();
+
+    protected abstract boolean shouldAllowReverseDnsLookup();
 
     public String getSslProtocolProperty() {
         return sslProtocolProperty;
@@ -236,6 +239,14 @@ public abstract class X509Util implements Closeable, AutoCloseable {
 
     public String getSslHostnameVerificationEnabledProperty() {
         return sslHostnameVerificationEnabledProperty;
+    }
+
+    public String getSslAllowReverseDnsLookupProperty() {
+        return sslAllowReverseDnsLookupProperty;
+    }
+
+    public boolean allowReverseDnsLookup(ZKConfig config) {
+        return config.getBoolean(this.getSslAllowReverseDnsLookupProperty(), shouldAllowReverseDnsLookup());
     }
 
     public String getSslCrlEnabledProperty() {
@@ -349,6 +360,7 @@ public abstract class X509Util implements Closeable, AutoCloseable {
                 config.getBoolean(this.getSslHostnameVerificationEnabledProperty(), true);
         boolean sslClientHostnameVerificationEnabled =
                 sslServerHostnameVerificationEnabled && shouldVerifyClientHostname();
+        boolean allowReverseDnsLookup = allowReverseDnsLookup(config);
 
         if (trustStoreLocationProp.isEmpty()) {
             LOG.warn(getSslTruststoreLocationProperty() + " not specified");
@@ -356,7 +368,8 @@ public abstract class X509Util implements Closeable, AutoCloseable {
             try {
                 trustManagers = new TrustManager[]{
                         createTrustManager(trustStoreLocationProp, trustStorePasswordProp, trustStoreTypeProp, sslCrlEnabled, sslOcspEnabled,
-                                sslServerHostnameVerificationEnabled, sslClientHostnameVerificationEnabled)};
+                                sslServerHostnameVerificationEnabled, sslClientHostnameVerificationEnabled,
+                                allowReverseDnsLookup)};
             } catch (TrustManagerException trustManagerException) {
                 throw new SSLContextException("Failed to create TrustManager", trustManagerException);
             } catch (IllegalArgumentException e) {
@@ -440,6 +453,9 @@ public abstract class X509Util implements Closeable, AutoCloseable {
      *                                          sockets created by this
      *                                          X509Util accept connections
      *                                          from.
+     * @param allowReverseDnsLookup if true, fall back to a reverse DNS
+     *                              lookup of the peer address when the
+     *                              certificate does not match its IP.
      * @return the trust manager.
      * @throws TrustManagerException if something goes wrong.
      */
@@ -450,7 +466,8 @@ public abstract class X509Util implements Closeable, AutoCloseable {
             boolean crlEnabled,
             boolean ocspEnabled,
             final boolean serverHostnameVerificationEnabled,
-            final boolean clientHostnameVerificationEnabled)
+            final boolean clientHostnameVerificationEnabled,
+            final boolean allowReverseDnsLookup)
             throws TrustManagerException {
         if (trustStorePassword == null) {
             trustStorePassword = "";
@@ -484,7 +501,8 @@ public abstract class X509Util implements Closeable, AutoCloseable {
             for (final TrustManager tm : tmf.getTrustManagers()) {
                 if (tm instanceof X509ExtendedTrustManager) {
                     return new ZKTrustManager((X509ExtendedTrustManager) tm,
-                            serverHostnameVerificationEnabled, clientHostnameVerificationEnabled);
+                            serverHostnameVerificationEnabled, clientHostnameVerificationEnabled,
+                            allowReverseDnsLookup);
                 }
             }
             throw new TrustManagerException("Couldn't find X509TrustManager");
