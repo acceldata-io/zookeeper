@@ -1153,6 +1153,30 @@ property, when available, is noted below.
     **New in 3.6.0:**
     The size threshold after which a request is considered a large request. If it is -1, then all requests are considered small, effectively turning off large request throttling. The default is -1.
 
+* *multiRead.maxOps* :
+    (Java system property: **zookeeper.multiRead.maxOps**)
+    **New in 3.8.5:**
+    The maximum number of read operations (getData / getChildren) permitted in a single
+    multiRead request. A multiRead can amplify a request that is small on the wire into a
+    very large in-memory response, because every sub-operation result is materialized and
+    held in memory before the response is serialized. This limit, together with
+    *multiRead.maxResponseBytes*, bounds that amplification. A multiRead exceeding this
+    count is rejected with a BadArguments (Code = BADARGUMENTS) error and is not executed.
+    Note that neither *jute.maxbuffer* nor *largeRequestMaxBytes* protects against this,
+    as both bound only the inbound request, not the response it generates. Set to 0 (or a
+    negative value) to disable the check. The default is 1000.
+
+* *multiRead.maxResponseBytes* :
+    (Java system property: **zookeeper.multiRead.maxResponseBytes**)
+    **New in 3.8.5:**
+    The maximum cumulative size, in bytes, of the data materialized while serving a single
+    multiRead request. This is the primary guard against a multiRead response-amplification
+    denial of service. The server accumulates the size of each sub-operation result as the
+    request is processed and rejects the request with a BadArguments (Code = BADARGUMENTS)
+    error as soon as the running total exceeds this value, before the full response is built
+    in heap. Set to 0 (or a negative value) to disable the check. The default is 67108864
+    (64 * 1024 * 1024, i.e. 64 MB).
+
 * *outstandingHandshake.limit*
     (Java system property only: **zookeeper.netty.server.outstandingHandshake.limit**)
     The maximum in-flight TLS handshake connections could have in ZooKeeper,
@@ -1781,6 +1805,14 @@ and [SASL authentication for ZooKeeper](https://cwiki.apache.org/confluence/disp
     This allows using e.g. `CNAME` records to reference servers in configuration files, while still enabling SASL Kerberos authentication between quorum members.
     It is essentially the quorum equivalent of the *zookeeper.sasl.client.canonicalize.hostname* property for clients.
     The default value is **false** for backwards compatibility.
+
+* *kerberos.shutdownTimeoutMs*
+    (Java system property: **zookeeper.kerberos.shutdownTimeoutMs**)
+    **New in 3.9.7:**
+    The time in milliseconds ZooKeeper waits for the Kerberos TGT renewal thread to exit while shutting down.
+    If the thread is still alive after that, ZooKeeper logs a warning and completes the shutdown.
+    Set it to 0 to wait without a timeout, which is how ZooKeeper behaved before this setting existed.
+    Default: 5000
 
 * *multiAddress.enabled* :
     (Java system property: **zookeeper.multiAddress.enabled**)
