@@ -25,12 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import ch.qos.logback.classic.Level;
-import java.io.IOException;
+import java.util.Collections;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.sasl.AuthorizeCallback;
-import org.apache.zookeeper.JaasConfiguration;
-import org.apache.zookeeper.server.ZooKeeperSaslServer;
 import org.apache.zookeeper.test.LoggerTestTool;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,18 +67,10 @@ public class SaslServerCallbackHandlerTest {
         loggerTestTool.getOutputStream().reset();
     }
 
-    private static SaslServerCallbackHandler newHandler() throws IOException {
-        // On branch-3.8 the handler reads DIGEST-MD5 credentials from the JAAS
-        // server section. Provide that section with no "user_" entries; the
-        // authorization path under test does not depend on credentials. Resolve
-        // the section name the same way the handler does, in case another test
-        // in this JVM has set zookeeper.sasl.serverconfig.
-        String serverSection = System.getProperty(
-            ZooKeeperSaslServer.LOGIN_CONTEXT_NAME_KEY,
-            ZooKeeperSaslServer.DEFAULT_LOGIN_CONTEXT_NAME);
-        JaasConfiguration jaas = new JaasConfiguration();
-        jaas.addSection(serverSection, "org.apache.zookeeper.server.auth.DigestLoginModule");
-        return new SaslServerCallbackHandler(jaas);
+    private static SaslServerCallbackHandler newHandler() {
+        // This line's handler takes a DIGEST-MD5 credential map. The authorization
+        // path under test does not read it.
+        return new SaslServerCallbackHandler(Collections.emptyMap());
     }
 
     private static AuthorizeCallback authorize(String authnId, String authzId) throws Exception {
